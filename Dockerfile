@@ -1,8 +1,8 @@
 FROM alpine:3.4
 MAINTAINER HandcraftedBits <opensource@handcraftedbits.com>
 
-ARG VERSION_NGINX=1.10.1
-ARG VERSION_NGINX_HEADERS_MORE=0.31
+ARG VERSION_NGINX=1.10.2
+ARG VERSION_NGINX_HEADERS_MORE=0.32
 
 ENV NGINX_GZIP on
 ENV NGINX_HEADERS_REMOVE Server,X-Powered-By
@@ -74,8 +74,9 @@ RUN apk update && \
   ln -sf /dev/stdout /var/log/nginx/access.log && \
   ln -sf /dev/stderr /var/log/nginx/error.log && \
   mkdir -p /var/lib/nginx && \
+  mkdir -p /var/log/letsencrypt && \
   chmod +x /opt/container/script/renew.sh && \
-  echo "0 0 * * * /opt/container/script/renew.sh" > /etc/crontab && \
+  echo "0 0 * * * /opt/container/script/renew.sh" | crontab - && \
   
   apk del build-base gd-dev geoip-dev git libxml2-dev libxslt-dev openssl-dev pcre-dev perl-dev wget zlib-dev
 
