@@ -1,4 +1,4 @@
-FROM alpine:3.4
+FROM alpine:3.5
 MAINTAINER HandcraftedBits <opensource@handcraftedbits.com>
 
 ARG VERSION_NGINX=1.10.2
