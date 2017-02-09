@@ -22,10 +22,11 @@ The following units are available -- simply pick and choose which ones you want 
 | Unit                                                                                              | Description                                                                                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [bamboo](https://github.com/handcraftedbits/docker-nginx-unit-bamboo)                             | The [Atlassian Bamboo](https://www.atlassian.com/software/bamboo) continuous integration server.                                                                                                                                        |
-| [bitbucket](https://github.com/handcraftedbits/docker-nginx-unit-bitbucket)         | The [Atlassian Bitbucket Server](https://www.atlassian.com/software/bitbucket/server) collaborative Git server.
+| [bitbucket](https://github.com/handcraftedbits/docker-nginx-unit-bitbucket)                       | The [Atlassian Bitbucket Server](https://www.atlassian.com/software/bitbucket/server) collaborative Git server.                                                                                                                         |
 | [confluence](https://github.com/handcraftedbits/docker-nginx-unit-confluence)                     | The [Atlassian Confluence](https://www.atlassian.com/software/confluence) team collaboration server.                                                                                                                                    |
 | [go-import-redirector](https://github.com/handcraftedbits/docker-nginx-unit-go-import-redirector) | A unit based off of [rsc/go-import-redirector](https://github.com/rsc/go-import-redirector), which simplifies the hosting of [Go](https://golang.org) [custom remote import paths](https://golang.org/cmd/go/#hdr-Remote_import_paths). |
-| [hugo](https://github.com/handcraftedbits/docker-nginx-unit-hugo)                                 | the [Hugo](https://gohugo.io) static site generator, designed for sites whose source code is hosted on GitHub.  Includes the ability to regenerate the site whenever you push a commit.                                                 |
+| [hugo](https://github.com/handcraftedbits/docker-nginx-unit-hugo)                                 | The [Hugo](https://gohugo.io) static site generator, designed for sites whose source code is hosted on GitHub.  Includes the ability to regenerate the site whenever you push a commit.                                                 |
+| [hugo-extras](https://github.com/handcraftedbits/docker-nginx-unit-hugo-extras)                   | An enhanced version of the Hugo unit which contains extra tools.                                                                                                                                                                        |
 | [jira](https://github.com/handcraftedbits/docker-nginx-unit-jira)                                 | The [Atlassian JIRA](https://www.atlassian.com/software/jira) software development tool.                                                                                                                                                |
 | [static](https://github.com/handcraftedbits/docker-nginx-unit-static)                             | A unit that hosts simple static content.                                                                                                                                                                                                |
 | [webhook](https://github.com/handcraftedbits/docker-nginx-unit-webhook)                           | A unit based off of [adnanh/webhook](https://github.com/adnanh/webhook), which allows you to execute arbitrary commands whenever a particular URL is accessed.                                                                          |
@@ -33,6 +34,11 @@ The following units are available -- simply pick and choose which ones you want 
 # Usage
 
 ## Prerequisites
+
+### Docker
+
+* Docker 1.13 or newer
+* Docker Compose 1.10.0 or newer
 
 ### SSL Certificates
 
@@ -69,7 +75,7 @@ involve several Docker containers.  This guide will assume that you are using Do
 To begin, let's create a `docker-compose.yml` file that contains the bare minimum set of services required:
 
 ```yaml
-version: '2'
+version: "3"
 
 services:
   data:
@@ -109,7 +115,7 @@ hosts nothing.  To fix that, let's add some static content by adding the `static
 service):
 
 ```yaml
-version: '2'
+version: "3"
 
 services:
   data:
@@ -121,12 +127,15 @@ services:
       - NGINX_UNIT_HOSTS=mysite.com
       - NGINX_URL_PREFIX=/
     volumes:
-      - /home/me/mysite:/opt/container/content
+      - /home/me/mysite:/opt/container/www-static
     volumes_from:
       - data
 
   proxy:
     image: handcraftedbits/nginx-host
+    depends_on:
+      mysite:
+        condition: service_healthy
     ports:
       - "443:443"
     volumes:
@@ -140,6 +149,9 @@ The `NGINX_UNIT_HOSTS` environment variable specifies that we will be listening 
 `NGINX_URL_PREFIX` environment variable specifies that all static content will be available under `/`.  Finally, we
 mount the local directory `/home/me/mysite` as the root of our static content (for more information on configuring the
 `static` unit, refer to the [documentation](https://github.com/handcraftedbits/docker-nginx-unit-static)).
+
+Note that we must add a `depends_on` block to our `proxy` service that, for each unit, asserts a `condition` of
+`service_healthy`: this is how NGINX Host knows that a unit has been properly started.
 
 There's more to NGINX Host than just static content though -- there are [several units](#available-units) you can mix
 and match to create your ideal server.  Consult the appropriate unit documentation for more information.
@@ -228,13 +240,6 @@ Used to set the value of the NGINX
 [`types_hash_max_size`](http://nginx.org/en/docs/ngx_http_core_module.html#types_hash_max_size) directive.
 
 **Default value**: `2048`
-
-#### `NGINX_UNIT_WAIT`
-
-Used to set the time, in seconds, that NGINX Host will wait for units to launch.  The value only needs to be changed if
-a particular unit takes an excessively long time to launch.
-
-**Default value**: `2`
 
 #### `NGINX_WORKER_CONNECTIONS`
 

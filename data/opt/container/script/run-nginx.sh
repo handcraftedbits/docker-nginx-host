@@ -47,33 +47,6 @@ function nginxConfSubstitute () {
      fileSubstitute /etc/nginx/nginx.conf ${1} ${2}
 }
 
-function numUnitsLaunched () {
-     local launchedDir=/etc/nginx/host/units/__launched__
-
-     if [ ! -d ${launchedDir} ]
-     then
-          mkdir -p ${launchedDir}
-     fi
-
-     ls ${launchedDir} | wc -w
-}
-
-function numUnitsStarted () {
-     local startedDir=/etc/nginx/host/units/__started__
-
-     if [ ! -d ${startedDir} ]
-     then
-          mkdir -p ${startedDir}
-     fi
-
-     ls ${startedDir} | wc -w
-}
-
-# Insert a brief pause to give us time for all the units to launch.
-
-echo "[info] waiting ${NGINX_UNIT_WAIT} second(s) for units to launch"
-sleep ${NGINX_UNIT_WAIT}
-
 mkdir -p /etc/nginx/host/servers
 mkdir -p /var/www/letsencrypt-well-known
 
@@ -86,20 +59,6 @@ nginxConfSubstitute NGINX_TYPES_HASH_MAX_SIZE ${NGINX_TYPES_HASH_MAX_SIZE}
 nginxConfSubstitute NGINX_WORKER_PROCESSES ${NGINX_WORKER_PROCESSES}
 nginxConfSubstitute NGINX_WORKER_CONNECTIONS ${NGINX_WORKER_CONNECTIONS}
 
-# Wait for units to start (i.e., to have their unit configuration files available).
-
-while [ `numUnitsStarted` -lt `numUnitsLaunched` ]
-do
-     sleep 0.2
-
-     echo "[info] waiting for unit(s) to start"
-done
-
-echo "[info] started "`numUnitsStarted`" unit(s)"
-
-rm -rf /etc/nginx/host/units/__launched__
-rm -rf /etc/nginx/host/units/__started__
-
 # Create a server configuration for each unit.
 
 for unit in `ls /etc/nginx/host/units 2> /dev/null`
@@ -107,8 +66,10 @@ do
      createServerConf ${unit}
 done
 
+echo "[info] started "`ls /etc/nginx/host/units | wc -w`" unit(s)"
+
 # Start cron for automated certificate renewal.
 
 crond
 
-/usr/share/nginx/sbin/nginx -g "daemon off;"
+exec /usr/share/nginx/sbin/nginx -g "daemon off;"
