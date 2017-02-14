@@ -123,9 +123,8 @@ services:
       - NGINX_UNIT_HOSTS=mysite.com
       - NGINX_URL_PREFIX=/
     volumes:
+      - data:/opt/container/shared
       - /home/me/mysite:/opt/container/www-static
-    volumes_from:
-      - data
 
   proxy:
     image: handcraftedbits/nginx-host
