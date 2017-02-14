@@ -83,6 +83,6 @@ server {
           }
 
           # Unit configuration.
-          include /etc/nginx/host/units/${nginx_hosts}/*.conf;
+          include /opt/container/shared/etc/nginx/host/units/${nginx_hosts}/*.conf;
      }
 }

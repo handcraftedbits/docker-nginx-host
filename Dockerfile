@@ -17,8 +17,8 @@ ENV NGINX_WORKER_CONNECTIONS 768
 COPY data /
 
 RUN apk update && \
-  apk add bash build-base certbot gd gd-dev geoip geoip-dev git libxml2 libxslt libxml2-dev libxslt-dev openssl \
-    openssl-dev pcre pcre-dev perl perl-dev wget zlib zlib-dev && \
+  apk add bash build-base certbot gd gd-dev geoip geoip-dev git libxml2 libxslt libxml2-dev libxslt-dev netcat-openbsd \
+    openssl openssl-dev pcre pcre-dev perl perl-dev wget zlib zlib-dev && \
   
   cd /tmp && \
   wget https://github.com/openresty/headers-more-nginx-module/archive/v${VERSION_NGINX_HEADERS_MORE}.tar.gz && \
@@ -82,4 +82,4 @@ RUN apk update && \
 
 EXPOSE 80 443
 
-CMD ["/bin/bash", "/opt/container/script/run-nginx.sh"]
+CMD [ "/bin/bash", "/opt/container/script/run-nginx.sh" ]

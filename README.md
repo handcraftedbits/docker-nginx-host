@@ -39,6 +39,7 @@ The following units are available -- simply pick and choose which ones you want 
 
 * Docker 1.13 or newer
 * Docker Compose 1.10.0 or newer
+  * `docker-compose.yml` must declare version `2.1` or later
 
 ### SSL Certificates
 
@@ -72,37 +73,32 @@ It is highly recommended that you use Docker orchestration software such as
 [Docker Compose](https://www.docker.com/products/docker-compose) as any NGINX Host setup you are likely to use will
 involve several Docker containers.  This guide will assume that you are using Docker Compose.
 
-To begin, let's create a `docker-compose.yml` file that contains the bare minimum set of services required:
+To begin, let's create a `docker-compose.yml` file that contains the bare minimum set of services and volumes required:
 
 ```yaml
-version: "3"
+version: "2.1"
+
+volumes:
+  data:
 
 services:
-  data:
-    image: handcraftedbits/nginx-host-data
-
   host:
     image: handcraftedbits/nginx-host
     ports:
       - "443:443"
     volumes:
+      - data:/opt/container/shared
       - /etc/letsencrypt:/etc/letsencrypt
       - /home/me/dhparam.pem:/etc/ssl/dhparam.pem
-    volumes_from:
-      - data
 ```
-
-The `data` service creates an instance of the
-[handcraftedbits/nginx-host-data](https://github.com/handcraftedbits/docker-nginx-host-data) container in order for
-common data to be shared between NGINX Host and its units.  Note that every unit and NGINX Host must reference this
-container (represented by the service `data` in this example) in its `volumes_from` section in order to mount the
-exported volumes, as seen in the example.
 
 The `host` service creates an instance of NGINX Host, listening on port `443`.  If you wish, you can also listen on
 port `80` and NGINX Host will automatically redirect HTTP requests to HTTPS.
 
 Next, we mount the following volumes:
 
+* `data`: a volume used to share information between NGINX Host and its units.  This volume must always be mounted to
+  `/opt/container/shared`.
 * `/etc/letsencrypt`: the location of your Let's Encrypt certificates and renewal information.  Typically this will be
   located in the `/etc/letsencrypt` directory on your local system.
 * `/etc/ssl/dhparam.pem`: the file containing your custom Diffie-Hellman parameters.  Note that this volume does not
@@ -115,12 +111,12 @@ hosts nothing.  To fix that, let's add some static content by adding the `static
 service):
 
 ```yaml
-version: "3"
+version: "2.1"
+
+volumes:
+  data:
 
 services:
-  data:
-    image: handcraftedbits/nginx-host-data
-
   mysite:
     image: handcraftedbits/nginx-unit-static
     environment:
@@ -133,16 +129,14 @@ services:
 
   proxy:
     image: handcraftedbits/nginx-host
-    depends_on:
-      mysite:
-        condition: service_healthy
+    links:
+      - mysite
     ports:
       - "443:443"
     volumes:
+      - data:/opt/container/shared
       - /etc/letsencrypt:/etc/letsencrypt
       - /home/me/dhparam.pem:/etc/ssl/dhparam.pem
-    volumes_from:
-      - data
 ```
 
 The `NGINX_UNIT_HOSTS` environment variable specifies that we will be listening for requests to `mysite.com` and the
@@ -150,8 +144,8 @@ The `NGINX_UNIT_HOSTS` environment variable specifies that we will be listening 
 mount the local directory `/home/me/mysite` as the root of our static content (for more information on configuring the
 `static` unit, refer to the [documentation](https://github.com/handcraftedbits/docker-nginx-unit-static)).
 
-Note that we must add a `depends_on` block to our `proxy` service that, for each unit, asserts a `condition` of
-`service_healthy`: this is how NGINX Host knows that a unit has been properly started.
+Note that we must add a link in the `proxy` service to each unit that NGINX Host will host.  In this case, we add a link
+to the `mysite` service.
 
 There's more to NGINX Host than just static content though -- there are [several units](#available-units) you can mix
 and match to create your ideal server.  Consult the appropriate unit documentation for more information.
@@ -240,6 +234,13 @@ Used to set the value of the NGINX
 [`types_hash_max_size`](http://nginx.org/en/docs/ngx_http_core_module.html#types_hash_max_size) directive.
 
 **Default value**: `2048`
+
+#### `NGINX_UNIT_WAIT`
+
+Used to set the time, in seconds, that NGINX Host will wait for units to launch.  The value only needs to be changed if
+a particular unit takes an excessively long time to launch.
+
+**Default value**: `2`
 
 #### `NGINX_WORKER_CONNECTIONS`
 

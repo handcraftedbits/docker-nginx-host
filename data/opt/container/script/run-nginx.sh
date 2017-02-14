@@ -1,5 +1,7 @@
 #!/bin/bash
 
+units_dir=/opt/container/shared/etc/nginx/host/units
+
 function createServerConf () {
      local headers_clear=""
      local server_config=/etc/nginx/host/servers/${1}.conf
@@ -50,6 +52,12 @@ function nginxConfSubstitute () {
 mkdir -p /etc/nginx/host/servers
 mkdir -p /var/www/letsencrypt-well-known
 
+# Expose /etc/letsencrypt to other units so they can make use of certificates, if necessary.
+
+mkdir -p /opt/container/shared/etc
+rm -rf /opt/container/shared/etc/letsencrypt
+cp -R /etc/letsencrypt /opt/container/shared/etc/letsencrypt
+
 # Fix /etc/nginx/nginx.conf.
 
 cp /opt/container/template/nginx.conf.template /etc/nginx/nginx.conf
@@ -59,14 +67,36 @@ nginxConfSubstitute NGINX_TYPES_HASH_MAX_SIZE ${NGINX_TYPES_HASH_MAX_SIZE}
 nginxConfSubstitute NGINX_WORKER_PROCESSES ${NGINX_WORKER_PROCESSES}
 nginxConfSubstitute NGINX_WORKER_CONNECTIONS ${NGINX_WORKER_CONNECTIONS}
 
-# Create a server configuration for each unit.
+# Insert a brief pause to give us time for all the units to launch.
 
-for unit in `ls /etc/nginx/host/units 2> /dev/null`
+echo "[info] waiting ${NGINX_UNIT_WAIT} second(s) for units to launch"
+
+sleep ${NGINX_UNIT_WAIT}
+
+echo "[info] found "`ls ${units_dir}/__launched__ | wc -w`" unit(s) to start"
+
+# Ping each unit to let it proceed with starting its main process.
+
+for unit in `ls ${units_dir}/__launched__ 2> /dev/null`
 do
-     createServerConf ${unit}
+     echo "[info] starting unit ${unit}..."
+
+     until echo "start" | nc ${unit} 1234
+     do
+          sleep 0.1
+     done
 done
 
-echo "[info] started "`ls /etc/nginx/host/units | wc -w`" unit(s)"
+echo "[info] started "`ls ${units_dir}/__launched__ | wc -w`" unit(s)"
+
+rm -rf ${units_dir}/__launched__
+
+# Create a server configuration for each host containing units.
+
+for host in `ls ${units_dir} 2> /dev/null`
+do
+     createServerConf ${host}
+done
 
 # Start cron for automated certificate renewal.
 
