@@ -49,6 +49,16 @@ function nginxConfSubstitute () {
      fileSubstitute /etc/nginx/nginx.conf ${1} ${2}
 }
 
+function onProcessStopped () {
+     kill -TERM ${1}
+
+     # Clean up if the process was terminated by Docker.
+
+     rm -rf /opt/container/shared/*
+
+     exit 0
+}
+
 mkdir -p /etc/nginx/host/servers
 mkdir -p /var/www/letsencrypt-well-known
 
@@ -102,4 +112,14 @@ done
 
 crond
 
-exec /usr/share/nginx/sbin/nginx -g "daemon off;"
+/usr/share/nginx/sbin/nginx -g "daemon off;" &
+
+pid=$!
+
+trap "onProcessStopped ${pid}" INT KILL TERM
+
+wait ${pid}
+
+# Clean up if the process was terminated unexpectedly.
+
+rm -rf /opt/container/shared/*
