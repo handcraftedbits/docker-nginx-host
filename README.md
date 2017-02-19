@@ -158,6 +158,11 @@ have a unit hosted on `*.mysite.com` and `othersite.com` with additional NGINX d
 `/home/me/myextra.com:/etc/nginx/extra/*.mysite.com,othersite.com.extra.conf` to the `docker run` command used to run
 the NGINX Host container.
 
+You can also add additional configuration at a higher level (in this case, within the `http` block) by mounting a file
+containing additional NGINX directives via the location `/etc/nginx/extra.conf`.  For example, if you have additional
+NGINX directives located in the file `/home/me/nginxextra.conf`, you would add the volume
+`/home/me/nginxextra.conf:/etc/nginx/extra.conf` to the `docker run` command used to run the NGINX host container.
+
 ## Running NGINX Host
 
 Assuming you are using Docker Compose, simply run `docker-compose up` in the same directory as your

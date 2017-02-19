@@ -31,4 +31,10 @@ http {
      #
 
      include /etc/nginx/host/servers/*.conf;
+
+     #
+     # Extra configuration
+     #
+
+     #include /etc/nginx/extra.conf;
 }

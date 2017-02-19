@@ -108,6 +108,13 @@ do
      createServerConf ${host}
 done
 
+# Add any extra global configuration.
+
+if [ -f /etc/nginx/extra.conf ]
+then
+     sed -i "s/#include/include/g" /etc/nginx/nginx.conf
+fi
+
 # Start cron for automated certificate renewal.
 
 crond
