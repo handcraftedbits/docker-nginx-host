@@ -1,7 +1,7 @@
 FROM alpine:3.5
 MAINTAINER HandcraftedBits <opensource@handcraftedbits.com>
 
-ARG VERSION_NGINX=1.10.2
+ARG VERSION_NGINX=1.10.3
 ARG VERSION_NGINX_HEADERS_MORE=0.32
 
 ENV NGINX_GZIP on

@@ -5,6 +5,7 @@ capable of hosting one or more Docker-based "units" of functionality, such as st
 
 # Features
 
+* NGINX 1.10.3
 * Designed to make creating an HTTPS server simple -- simply pick the parts you need.
 * Default SSL settings score an **A+** grade on [SSL Labs](https://www.ssllabs.com/ssltest/) when including custom
   [Diffie-Hellman parameters](https://scotthelme.co.uk/squeezing-a-little-more-out-of-your-qualys-score/).
