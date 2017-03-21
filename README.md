@@ -260,3 +260,9 @@ Used to set the value of the NGINX
 [`worker_processes`](http://nginx.org/en/docs/ngx_core_module.html#worker_processes) directive.
 
 **Default value**: `auto`
+
+#### `NGINX_WWW_REDIRECT_HOSTS`
+
+A comma-delimited list used to specify which host(s) will have a `www` to non-`www` redirect added automatically.  This
+is useful if you want to force the use of "naked" (non-`www`) domains.  Note that you cannot use wildcards for this
+environment variable.

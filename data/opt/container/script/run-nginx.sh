@@ -3,18 +3,21 @@
 units_dir=/opt/container/shared/etc/nginx/host/units
 
 function createServerConf () {
+     local common_config=/etc/nginx/host/servers/${1}.conf.common
      local headers_clear=""
      local server_config=/etc/nginx/host/servers/${1}.conf
 
-     cp /opt/container/template/server.conf.template /etc/nginx/host/servers/${1}.conf
+     cp /opt/container/template/common.conf.template ${common_config}
+     cp /opt/container/template/server.conf.template ${server_config}
      fileSubstitute ${server_config} NGINX_PROXY_READ_TIMEOUT ${NGINX_PROXY_READ_TIMEOUT}
-     fileSubstitute ${server_config} NGINX_RESOLVER ${NGINX_RESOLVER}
+     fileSubstitute ${common_config} NGINX_RESOLVER ${NGINX_RESOLVER}
+     fileSubstitute ${common_config} nginx_hosts ${1}
      fileSubstitute ${server_config} nginx_hosts ${1}
      fileSubstitute ${server_config} nginx_units `echo ${1} | sed "s/,/ /g"`
 
      if [ -f /etc/ssl/dhparam.pem ]
      then
-          sed -i "s/#ssl_dhparam/ssl_dhparam/g" ${server_config}
+          sed -i "s/#ssl_dhparam/ssl_dhparam/g" ${common_config}
      fi
 
      # For NGINX_HEADERS_REMOVE, strip whitespace and split on commas.  Then massage the values a bit to fit the format
@@ -27,8 +30,8 @@ function createServerConf () {
 
      if [ ! -z "${headers_clear}" ]
      then
-          sed -i "s/\${headers_clear}/${headers_clear}/g" ${server_config}
-          sed -i "s/#more_clear_headers/more_clear_headers/g" ${server_config}
+          sed -i "s/\${headers_clear}/${headers_clear}/g" ${common_config}
+          sed -i "s/#more_clear_headers/more_clear_headers/g" ${common_config}
      fi
 
      # Include any extra configuration for the virtual host if available.
@@ -37,8 +40,17 @@ function createServerConf () {
      then
           cp /etc/nginx/extra/${1}.extra.conf ${server_config}.extra
 
-          sed -i "s/#include/include/g" ${server_config}
+          sed -i "s/#include/include/g" ${common_config}
      fi
+}
+
+function createWWWRedirectConf () {
+     local www_redirect_config=/etc/nginx/host/servers/${1}.conf.www_redirect
+
+     cp /opt/container/template/www_redirect.conf.template ${www_redirect_config}
+     fileSubstitute ${www_redirect_config} nginx_hosts ${1}
+
+     sed -i "s/#include/include/g" /etc/nginx/host/servers/${1}.conf
 }
 
 function fileSubstitute () {
@@ -106,6 +118,18 @@ rm -rf ${units_dir}/__launched__
 for host in `ls ${units_dir} 2> /dev/null`
 do
      createServerConf ${host}
+
+     # Turn NGINX_WWW_REDIRECT_HOSTS into an array.  If the current host is found, create the appropriate configuration.
+
+     IFS=',' read -r -a www_redirect_hosts <<< ${NGINX_WWW_REDIRECT_HOSTS}
+
+     for www_redirect_host in "${www_redirect_hosts[@]}"
+     do
+          if [ "${www_redirect_host}" == "${host}" ]
+          then
+               createWWWRedirectConf ${host}
+          fi
+     done
 done
 
 # Add any extra global configuration.

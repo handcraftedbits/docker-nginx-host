@@ -1,0 +1,9 @@
+server {
+     listen 80;
+     listen 443 ssl http2;
+     server_name www.${nginx_hosts};
+
+     include /etc/nginx/host/servers/${nginx_hosts}.conf.common;
+
+     return 301 https://${nginx_hosts}$request_uri;
+}
